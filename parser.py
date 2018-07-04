@@ -5,12 +5,12 @@ import tempfile
 import os
 import cv2
 import click
+import queue
+import threading
 
-@click.command()
-@click.option('--endpoint', prompt='Kinesis Video Endpoint', help='Kinesis Video Endpoint.')
-@click.option('--stream', prompt='Kinesis Stream Name', help='Kinesis Stream Name.')
+q = queue.Queue()
 
-def run(endpoint, stream):
+def worker(endpoint, stream):
     client = boto3.client('kinesis-video-media', endpoint_url=endpoint)
 
     response = client.get_media(
@@ -20,11 +20,9 @@ def run(endpoint, stream):
         }
     )
 
-    stream = response['Payload']
-
     fd, path = tempfile.mkstemp()
 
-    iterchunks = stream.iter_chunks()
+    iterchunks = response['Payload'].iter_chunks()
     first_chunk = next(iterchunks)
     chunk = BitArray(first_chunk)
 
@@ -33,19 +31,34 @@ def run(endpoint, stream):
         pos = a.find('0x1a45dfa3')
         if pos:
             chunk.append(a[:pos[0]])
-            with open('myfile.mkv', 'wb') as w:
+            with open('/Volumes/ramdisk/myfile.mkv', 'wb') as w:
                 w.write(chunk.tobytes())
-            videogen = skvideo.io.vreader('myfile.mkv')
+            videogen = skvideo.io.vreader('/Volumes/ramdisk/myfile.mkv')
             for frame in videogen:
-                print(frame.shape)
-                mat = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                small_mat = cv2.resize(mat, (0,0), fx=0.5, fy=0.5)
-                cv2.imshow('image', small_mat)
-                cv2.waitKey(1)
+                q.put(frame)
             chunk = a[pos[0]:]
         else:
             chunk.append(a)
 
+@click.command()
+@click.option('--endpoint', prompt='Kinesis Video Endpoint', help='Kinesis Video Endpoint.')
+@click.option('--stream', prompt='Kinesis Stream Name', help='Kinesis Stream Name.')
+
+def run(endpoint, stream):
+
+    t = threading.Thread(target=worker, args=(endpoint, stream))
+    t.start()
+
+    while True:
+        item = q.get()
+        if item is None:
+            break
+        print(q.qsize())
+        mat = cv2.cvtColor(item, cv2.COLOR_BGR2RGB)
+        small_mat = cv2.resize(mat, (0,0), fx=0.4, fy=0.4)
+        #cv2.imshow('image', small_mat)
+        #cv2.waitKey(1)
+        q.task_done()
 
 if __name__ == '__main__':
     run()
