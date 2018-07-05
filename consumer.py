@@ -53,11 +53,11 @@ def run(endpoint, stream):
         item = q.get()
         if item is None:
             break
-        print(q.qsize())
+        #print(q.qsize())
         mat = cv2.cvtColor(item, cv2.COLOR_BGR2RGB)
         small_mat = cv2.resize(mat, (0,0), fx=0.4, fy=0.4)
-        #cv2.imshow('image', small_mat)
-        #cv2.waitKey(1)
+        cv2.imshow('image', small_mat)
+        cv2.waitKey(1)
         q.task_done()
 
 if __name__ == '__main__':
