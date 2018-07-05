@@ -1,2 +1,4 @@
-# python-kvs-consumer
-Python KVS Consumer Project
+# Python Kinesis Video Streams Consumer
+
+## Setup
+```pip install -r requirements.txt```
