@@ -10,3 +10,6 @@ To create a local Ramdisk run ```./ramdisk.sh create 30```
 ```pip install -r requirements.txt```
 
 ### Execute Consumer
+```python3 consumer.py  --endpoint <KINESIS_VIDEO_ENDPOINT> --stream <STREAM_NAME>```
+
+Note: Your Kinesis Video Endpoint can be retrieved by running ```aws kinesisvideo get-data-endpoint --api-name GET_MEDIA --stream-name <STREAM_NAME>```
