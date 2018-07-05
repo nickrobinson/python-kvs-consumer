@@ -3,14 +3,20 @@ import boto3
 import skvideo.io
 import tempfile
 import os
-import cv2
 import click
 import queue
 import threading
 
+from darkflow.net.build import TFNet
+import cv2
+
+options = {"model": "cfg/tiny-yolo-voc.cfg", "load": "bin/tiny-yolo-voc.weights", "threshold": 0.3}
+tfnet = TFNet(options)
+
 q = queue.Queue()
 
 def worker(endpoint, stream):
+    counter = 0
     client = boto3.client('kinesis-video-media', endpoint_url=endpoint)
 
     response = client.get_media(
@@ -35,10 +41,12 @@ def worker(endpoint, stream):
                 w.write(chunk.tobytes())
             videogen = skvideo.io.vreader('/Volumes/ramdisk/myfile.mkv')
             for frame in videogen:
-                q.put(frame)
+                if counter % 20 == 1:
+                    q.put(frame)
             chunk = a[pos[0]:]
         else:
             chunk.append(a)
+        counter += 1
 
 @click.command()
 @click.option('--endpoint', prompt='Kinesis Video Endpoint', help='Kinesis Video Endpoint.')
@@ -56,8 +64,10 @@ def run(endpoint, stream):
         #print(q.qsize())
         mat = cv2.cvtColor(item, cv2.COLOR_BGR2RGB)
         small_mat = cv2.resize(mat, (0,0), fx=0.4, fy=0.4)
-        cv2.imshow('image', small_mat)
-        cv2.waitKey(1)
+        result = tfnet.return_predict(small_mat)
+        print(result)
+        #cv2.imshow('image', small_mat)
+        #cv2.waitKey(1)
         q.task_done()
 
 if __name__ == '__main__':
