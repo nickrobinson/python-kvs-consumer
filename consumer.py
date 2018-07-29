@@ -1,14 +1,7 @@
-from bitstring import BitArray, BitStream
-import boto3
-import skvideo.io
-import tempfile
-import os
 import click
-import queue
-import threading
 
 #from darkflow.net.build import TFNet
-import cv2
+# import cv2
 from amazon_kvclpy import kvcl
 
 class FrameProcessor(kvcl.FrameProcessorBase):

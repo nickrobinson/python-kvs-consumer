@@ -1,7 +1,7 @@
 import abc
 import tempfile
 import boto3
-from bitstring import BitArray, BitStream
+from bitstring import BitArray
 import skvideo.io
 
 # RecordProcessor base class
@@ -97,10 +97,10 @@ class KVCLProcess(object):
         pos = a.find('0x1a45dfa3')
         if pos:
             chunk.append(a[:pos[0]])
-            f = tempfile.NamedTemporaryFile(delete=False, suffix='.mkv')
+            f = tempfile.NamedTemporaryFile(suffix='.mkv')
             print(f.name)
             f.write(chunk.tobytes())
-            videogen = skvideo.io.vreader(f.name, backend="libav")
+            videogen = skvideo.io.vreader(f.name)
             for frame in videogen:
                 if counter % 20 == 1:
                     self.processor.process_frame(frame)
