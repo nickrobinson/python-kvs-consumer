@@ -78,9 +78,9 @@ class KVCLProcess(object):
     self.processor = frame_processor
     self.kvs_client = boto3.client('kinesis-video-media', endpoint_url=endpoint)
     self.stream_name = stream_name
+    self.counter = 0
 
   def run(self):
-    counter = 0
     response = self.kvs_client.get_media(
         StreamName=self.stream_name,
         StartSelector={
@@ -98,13 +98,12 @@ class KVCLProcess(object):
         if pos:
             chunk.append(a[:pos[0]])
             f = tempfile.NamedTemporaryFile(suffix='.mkv')
-            print(f.name)
             f.write(chunk.tobytes())
             videogen = skvideo.io.vreader(f.name)
             for frame in videogen:
-                if counter % 20 == 1:
-                    self.processor.process_frame(frame)
+                if self.counter % 5 == 1:
+                    self.processor.process_frame(frame, None)
+                self.counter += 1
             chunk = a[pos[0]:]
         else:
             chunk.append(a)
-        counter += 1
